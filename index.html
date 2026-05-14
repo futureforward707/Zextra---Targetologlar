@@ -1230,11 +1230,13 @@ async function submitForm(e) {
     targetologLine + '\n' +
     '🕐 *Vaqt:* ' + now;
 
-  var BOT_TOKEN = '8735137212:AAHpun4b37tIezu87JSms0sFH-x0KUVPQw8';
-  var CHAT_ID   = '-1003957602601';
+  var BOT_TOKEN  = '8735137212:AAHpun4b37tIezu87JSms0sFH-x0KUVPQw8';
+  var CHAT_ID    = '-1003957602601';
+  var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzG_-qL0pqFjWWWqLOMCKSSRwwt-nXvJd1E4dcotDebGXP4yBVj4zVwAKzL2N1-H2FSiA/exec';
 
   try {
-    var res = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
+    // 1. Telegram ga yuborish
+    var telegramRes = await fetch('https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1243,22 +1245,34 @@ async function submitForm(e) {
         parse_mode: 'Markdown'
       })
     });
+    var telegramData = await telegramRes.json();
+    if (!telegramData.ok) throw new Error('Telegram xato');
 
-    var data = await res.json();
+    // 2. Google Sheets ga yuborish
+    await fetch(SHEETS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: name,
+        phone: phone,
+        city: city,
+        problem: problem,
+        targetolog: tm || ''
+      })
+    });
 
-    if (data.ok) {
-      fbq('track', 'Lead');
-      btn.textContent = '✓ Buyurtma qabul qilindi!';
-      btn.style.background = '#2E6DC4';
-      e.target.reset();
-      setTimeout(function() {
-        btn.textContent = 'Buyurtma berish →';
-        btn.style.background = '';
-        btn.disabled = false;
-      }, 4000);
-    } else {
-      throw new Error('Telegram xato');
-    }
+    // Muvaffaqiyat
+    fbq('track', 'Lead');
+    btn.textContent = '✓ Buyurtma qabul qilindi!';
+    btn.style.background = '#2E6DC4';
+    e.target.reset();
+    setTimeout(function() {
+      btn.textContent = 'Buyurtma berish →';
+      btn.style.background = '';
+      btn.disabled = false;
+    }, 4000);
+
   } catch (err) {
     btn.textContent = '❌ Xatolik! Qayta urining';
     btn.style.background = '#c0392b';
